@@ -1,0 +1,249 @@
+{
+  "name": "AI Invoice Extraction Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "058c76aa-bb08-4dca-8b22-0391cc58aace",
+      "name": "Start Manual Run"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/files/input-pdfs/*.pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "8c37d2c4-b5be-40ce-8c38-3fefbb6ac416",
+      "name": "Read Input PDFs"
+    },
+    {
+      "parameters": {
+        "content": "📥 INGESTION\n\nReads all PDF files from the Docker-mounted input directory:\n/files/input-pdfs\n\nThe file selector supports multiple PDFs using the pattern:\n/files/input-pdfs/*.pdf",
+        "height": 416,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        160,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "714da591-49bd-415c-9384-54904739b886",
+      "name": "Note - Ingestion"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "5508a196-b358-43c8-aeb7-11c7c791c143",
+      "name": "Extract PDF Text"
+    },
+    {
+      "parameters": {
+        "content": "📄 PDF TEXT EXTRACTION\n\nConverts each PDF file into plain text using n8n's native PDF extraction.\n\nThis works best with digital PDFs that contain selectable text.",
+        "height": 416,
+        "width": 166
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        384,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "5f8e9e0b-0c13-41fe-a22c-e51ed47e96ea",
+      "name": "Note - PDF Text Extraction"
+    },
+    {
+      "parameters": {
+        "content": "✂️ Splits each PDF text into individual invoices using the repeated invoice header as a marker. Produces one n8n item per invoice/page.",
+        "height": 416,
+        "width": 166
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        592,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "6180c5fd-e3a1-4167-8c58-df663fb3af09",
+      "name": "Note - Invoice Splitting"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "claude-haiku-4-5-20251001"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Extract the data from this invoice and return only valid JSON.\n\nInvoice text:\n{{ $json.raw_invoice_text }}\n\nUse exactly this schema:\n{\n  \"grower_name\": null,\n  \"grower_ruc\": null,\n  \"client_name\": null,\n  \"date\": null,\n  \"invoice_number\": null,\n  \"air_way_bill\": null,\n  \"house_air_way_bill\": null,\n  \"airline\": null,\n  \"items\": [],\n  \"total_amount\": null\n}"
+            }
+          ]
+        },
+        "options": {
+          "system": "You are an invoice data extraction assistant. Return only valid JSON. Do not use Markdown. Do not include explanations or any text outside the JSON object. Convert numeric values to numbers without thousands separators."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        832,
+        0
+      ],
+      "id": "ff21b4d4-bed2-4fca-aad9-e104f1f58e5d",
+      "name": "Extract Structured Invoice Data",
+      "credentials": {
+        "anthropicApi": {
+          "id": "RWTDqG3eDFN6lhkA",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "🤖 AI DATA EXTRACTION\n\nClaude Haiku reads each invoice text block and extracts structured invoice data as valid JSON.",
+        "height": 416,
+        "width": 182
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "d4616bab-fc2b-4802-91b1-14b4b28ab047",
+      "name": "Note - AI Extraction"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item, index) => {\n  let text = item.json.content?.[0]?.text || '';\n\n  text = text\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/```$/i, '')\n    .trim();\n\n  const parsed = JSON.parse(text);\n\n  return {\n    json: {\n      page_number: index + 1,\n      ...parsed,\n    },\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "89737c41-884b-426f-8d4f-9d3d4d344d4f",
+      "name": "Parse and Normalize JSON"
+    },
+    {
+      "parameters": {
+        "content": "🧹 JSON NORMALIZATION\n\nParses the LLM text response into real n8n JSON and prepares the data for validation and database persistence.",
+        "height": 416,
+        "width": 182
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1136,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "0d718389-1629-40ef-92bc-dc90237b313d",
+      "name": "Note - JSON Normalization"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all();\nconst output = [];\n\nfor (const item of allItems) {\n  const input = item.json;\n\n  const fullText = input.text || '';\n  const totalPages = input.numpages || null;\n  const fileName = input.fileName || item.binary?.data?.fileName || null;\n\n  const markerRegex = /Grower Name & Address\\s+Foreign Purchaser/g;\n  const matches = [...fullText.matchAll(markerRegex)];\n\n  if (matches.length === 0) {\n    output.push({\n      json: {\n        file_name: fileName,\n        error: 'No invoices found using the expected document marker',\n      },\n    });\n    continue;\n  }\n\n  for (let index = 0; index < matches.length; index++) {\n    const start = matches[index].index;\n    const end = index + 1 < matches.length\n      ? matches[index + 1].index\n      : fullText.length;\n\n    output.push({\n      json: {\n        file_name: fileName,\n        page_number: index + 1,\n        total_pages: totalPages,\n        raw_invoice_text: fullText.slice(start, end).trim(),\n      },\n    });\n  }\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "ebe37e32-89b2-4ec5-90eb-44090b62eaec",
+      "name": "Split Invoices into Items"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start Manual Run": {
+      "main": [
+        [
+          {
+            "node": "Read Input PDFs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Input PDFs": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Split Invoices into Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Structured Invoice Data": {
+      "main": [
+        [
+          {
+            "node": "Parse and Normalize JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Invoices into Items": {
+      "main": [
+        [
+          {
+            "node": "Extract Structured Invoice Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "83b08536-3b59-4dd2-9681-a620c0abe8fc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "12d3a4a6df314132be4315d5c019dfa73b52090f3f9855edea4b1f8b68b225ca"
+  },
+  "id": "O1A2XXUlfSCzxF1o",
+  "tags": []
+}
