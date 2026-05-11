@@ -6,10 +6,10 @@
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        0,
-        0
+        -160,
+        192
       ],
-      "id": "058c76aa-bb08-4dca-8b22-0391cc58aace",
+      "id": "f6fcd9ec-6e03-4513-8d24-2cefa75c0889",
       "name": "Start Manual Run"
     },
     {
@@ -20,10 +20,10 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1.1,
       "position": [
-        208,
-        0
+        48,
+        192
       ],
-      "id": "8c37d2c4-b5be-40ce-8c38-3fefbb6ac416",
+      "id": "42663aba-4dd6-4cfb-9983-5803f0ce3d9a",
       "name": "Read Input PDFs"
     },
     {
@@ -34,11 +34,11 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        160,
-        -192
+        0,
+        -32
       ],
       "typeVersion": 1,
-      "id": "714da591-49bd-415c-9384-54904739b886",
+      "id": "59f8081d-5eb3-4571-8e94-92ecdf21e5ba",
       "name": "Note - Ingestion"
     },
     {
@@ -49,10 +49,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        416,
-        0
+        256,
+        192
       ],
-      "id": "5508a196-b358-43c8-aeb7-11c7c791c143",
+      "id": "ff2d07d8-0a2d-4319-bc9f-1020989da7b0",
       "name": "Extract PDF Text"
     },
     {
@@ -63,11 +63,11 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        384,
-        -192
+        224,
+        -32
       ],
       "typeVersion": 1,
-      "id": "5f8e9e0b-0c13-41fe-a22c-e51ed47e96ea",
+      "id": "a1fab8a4-119c-47ed-b2e5-1260e59f24c0",
       "name": "Note - PDF Text Extraction"
     },
     {
@@ -78,11 +78,11 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        592,
-        -192
+        432,
+        -32
       ],
       "typeVersion": 1,
-      "id": "6180c5fd-e3a1-4167-8c58-df663fb3af09",
+      "id": "cd28dd93-a0d5-47f8-baed-c30a2a8beaa6",
       "name": "Note - Invoice Splitting"
     },
     {
@@ -107,10 +107,10 @@
       "type": "@n8n/n8n-nodes-langchain.anthropic",
       "typeVersion": 1,
       "position": [
-        832,
-        0
+        672,
+        192
       ],
-      "id": "ff21b4d4-bed2-4fca-aad9-e104f1f58e5d",
+      "id": "1a683b4d-ec48-4cb9-9613-37bd40b473f0",
       "name": "Extract Structured Invoice Data",
       "credentials": {
         "anthropicApi": {
@@ -127,11 +127,11 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        848,
-        -192
+        688,
+        -32
       ],
       "typeVersion": 1,
-      "id": "d4616bab-fc2b-4802-91b1-14b4b28ab047",
+      "id": "0f8d6aca-48f4-4716-b36a-37e62bee0828",
       "name": "Note - AI Extraction"
     },
     {
@@ -141,10 +141,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1184,
-        0
+        1024,
+        192
       ],
-      "id": "89737c41-884b-426f-8d4f-9d3d4d344d4f",
+      "id": "c1c00f07-a7b6-4fe7-bae3-6891d8c5245e",
       "name": "Parse and Normalize JSON"
     },
     {
@@ -155,11 +155,11 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        1136,
-        -192
+        976,
+        -32
       ],
       "typeVersion": 1,
-      "id": "0d718389-1629-40ef-92bc-dc90237b313d",
+      "id": "773d6b3d-3c3b-4643-b9ba-d5775f4fb78a",
       "name": "Note - JSON Normalization"
     },
     {
@@ -169,11 +169,446 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        624,
-        0
+        464,
+        192
       ],
-      "id": "ebe37e32-89b2-4ec5-90eb-44090b62eaec",
+      "id": "a786c356-0995-4c2a-91b1-5b48a0d5b6d6",
       "name": "Split Invoices into Items"
+    },
+    {
+      "parameters": {
+        "maxItems": 4
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        496
+      ],
+      "id": "c69d0b27-d84b-4507-a643-586236e14919",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\n\nfor (const item of $input.all()) {\n  const invoiceId = item.json.id;\n\n  const raw =\n    typeof item.json.raw_json === 'string'\n      ? JSON.parse(item.json.raw_json)\n      : item.json.raw_json;\n\n  const invoiceItems = raw.items || [];\n\n  invoiceItems.forEach((line, index) => {\n    output.push({\n      json: {\n        invoice_id: invoiceId,\n        line_index: index + 1,\n        product: line.product ?? null,\n        boxes: line.boxes ?? null,\n        unit: line.unit ?? null,\n        pieces: line.pieces ?? null,\n        tariff_number: line.tariff_number ?? null,\n        bunches: line.bunches ?? null,\n        stems: line.stems ?? null,\n        unit_price: line.unit_price ?? null,\n        extended_price: line.extended_price ?? null,\n      },\n    });\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        176
+      ],
+      "id": "5e7183c5-bbc1-462e-93eb-6722144eaaff",
+      "name": "Prepare Invoice Items"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "invoices",
+          "mode": "list",
+          "cachedResultName": "invoices"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "grower_name": "={{ $json.grower_name }}",
+            "page_number": "={{ $json.page_number }}",
+            "grower_ruc": "={{ $json.grower_ruc }}",
+            "client_name": "={{ $json.client_name }}",
+            "invoice_date": "={{ $json.date }}",
+            "invoice_number": "={{ $json.invoice_number }}",
+            "air_way_bill": "={{ $json.air_way_bill }}",
+            "house_air_way_bill": "={{ $json.house_air_way_bill }}",
+            "airline": "={{ $json.airline }}",
+            "total_amount": "={{ $json.total_amount }}",
+            "source_file": "={{ $('Split Invoices into Items').item.json.file_name }}",
+            "created_at": "={{ $json.date }}",
+            "raw_json": "={{ JSON.stringify($json) }}"
+          },
+          "matchingColumns": [
+            "grower_ruc",
+            "invoice_number",
+            "air_way_bill"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "source_file",
+              "displayName": "source_file",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "page_number",
+              "displayName": "page_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "grower_name",
+              "displayName": "grower_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "grower_ruc",
+              "displayName": "grower_ruc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "client_name",
+              "displayName": "client_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "invoice_date",
+              "displayName": "invoice_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "invoice_number",
+              "displayName": "invoice_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "air_way_bill",
+              "displayName": "air_way_bill",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "house_air_way_bill",
+              "displayName": "house_air_way_bill",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "airline",
+              "displayName": "airline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "total_amount",
+              "displayName": "total_amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "raw_json",
+              "displayName": "raw_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1344,
+        176
+      ],
+      "id": "dcc0c113-d801-4a3f-a2b2-cf03bb469275",
+      "name": "Insert invoice Header",
+      "credentials": {
+        "postgres": {
+          "id": "qNJlF34ZuuPfag23",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "invoice_items",
+          "mode": "list",
+          "cachedResultName": "invoice_items"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "invoice_id": "={{ $json.invoice_id }}",
+            "product": "={{ $json.product }}",
+            "boxes": "={{ $json.boxes }}",
+            "unit": "={{ $json.unit }}",
+            "pieces": "={{ $json.pieces }}",
+            "tariff_number": "={{ $json.tariff_number }}",
+            "bunches": "={{ $json.bunches }}",
+            "stems": "={{ $json.stems }}",
+            "unit_price": "={{ $json.unit_price }}",
+            "extended_price": "={{ $json.extended_price }}",
+            "line_index": "={{ $json.line_index }}"
+          },
+          "matchingColumns": [
+            "invoice_id",
+            "line_index"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "invoice_id",
+              "displayName": "invoice_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "product",
+              "displayName": "product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "boxes",
+              "displayName": "boxes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "unit",
+              "displayName": "unit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "pieces",
+              "displayName": "pieces",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "tariff_number",
+              "displayName": "tariff_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bunches",
+              "displayName": "bunches",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stems",
+              "displayName": "stems",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "unit_price",
+              "displayName": "unit_price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "extended_price",
+              "displayName": "extended_price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "line_index",
+              "displayName": "line_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1760,
+        176
+      ],
+      "id": "96ba0eb3-5985-404e-9c87-3bc57b630bda",
+      "name": "Insert invoice items",
+      "credentials": {
+        "postgres": {
+          "id": "qNJlF34ZuuPfag23",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "🗄️ DATABASE PERSISTENCE\n\nUpserts normalized invoice headers into PostgreSQL using composite business keys for duplicate protection.\n\nUnique matching:\n\ngrower_ruc\ninvoice_number\nair_way_bill\n\nReturns generated invoice IDs for relational linking.\n",
+        "height": 528,
+        "width": 198
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1280,
+        -128
+      ],
+      "typeVersion": 1,
+      "id": "8a501e2e-209e-49a9-a5f1-fc13417930a4",
+      "name": "Note - JSON Normalization1"
+    },
+    {
+      "parameters": {
+        "content": "🔗  ITEM RELATION MAPPING\n\nTransforms nested invoice line items into relational records.\n\nGenerates:\n\ninvoice_id foreign key\nline_index per invoice\nflattened item structure for SQL persistence",
+        "height": 528,
+        "width": 182
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1504,
+        -128
+      ],
+      "typeVersion": 1,
+      "id": "68c28b63-1d1c-4e0f-85c0-21554af4ccd6",
+      "name": "Note - JSON Normalization2"
+    },
+    {
+      "parameters": {
+        "content": "🧾  LINE ITEM UPSERT\n\nPersists invoice line items into PostgreSQL with duplicate-safe upsert logic.\n\nUnique matching:\n\ninvoice_id\nline_index\n\nPrevents duplicate item insertion across repeated workflow executions.",
+        "height": 528,
+        "width": 182
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1728,
+        -128
+      ],
+      "typeVersion": 1,
+      "id": "bea6d3b1-cc33-48b4-9b77-005b21e0e92b",
+      "name": "Note - JSON Normalization3"
     }
   ],
   "pinData": {},
@@ -232,6 +667,50 @@
           }
         ]
       ]
+    },
+    "Parse and Normalize JSON": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Insert invoice Header",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert invoice Header": {
+      "main": [
+        [
+          {
+            "node": "Prepare Invoice Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Invoice Items": {
+      "main": [
+        [
+          {
+            "node": "Insert invoice items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -239,11 +718,11 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "83b08536-3b59-4dd2-9681-a620c0abe8fc",
+  "versionId": "09413529-98f0-459b-8b70-6d00bc557240",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "12d3a4a6df314132be4315d5c019dfa73b52090f3f9855edea4b1f8b68b225ca"
   },
-  "id": "O1A2XXUlfSCzxF1o",
+  "id": "iQRkJZQzICOK5LmW",
   "tags": []
 }
