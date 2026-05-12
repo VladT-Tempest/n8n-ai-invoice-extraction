@@ -1,0 +1,40 @@
+services:
+  n8n-prod-pdfxtrac:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n-prod-pdfxtrac
+    ports:
+      - "5679:5678"
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - TZ=${TZ}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_EDITOR_BASE_URL=http://localhost:5679
+      - WEBHOOK_URL=http://localhost:5679
+      - N8N_RESTRICT_FILE_ACCESS_TO=/files
+      - NODE_FUNCTION_ALLOW_BUILTIN=fs,path
+    volumes:
+      - n8n_prod_pdfxtrac_data:/home/node/.n8n
+      - ./files:/files
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
+    container_name: postgres-pdfxtrac
+    environment:
+      - POSTGRES_DB=pdfxtrac
+      - POSTGRES_USER=pdfxtrac_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_pdfxtrac_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+
+volumes:
+  n8n_prod_pdfxtrac_data:
+    name: n8n_prod_pdfxtrac_data
+
+  postgres_pdfxtrac_data:
+    name: postgres_pdfxtrac_data

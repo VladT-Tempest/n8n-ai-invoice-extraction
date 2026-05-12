@@ -164,7 +164,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const allItems = $input.all();\nconst output = [];\n\nfor (const item of allItems) {\n  const input = item.json;\n\n  const fullText = input.text || '';\n  const totalPages = input.numpages || null;\n  const fileName = input.fileName || item.binary?.data?.fileName || null;\n\n  const markerRegex = /Grower Name & Address\\s+Foreign Purchaser/g;\n  const matches = [...fullText.matchAll(markerRegex)];\n\n  if (matches.length === 0) {\n    output.push({\n      json: {\n        file_name: fileName,\n        error: 'No invoices found using the expected document marker',\n      },\n    });\n    continue;\n  }\n\n  for (let index = 0; index < matches.length; index++) {\n    const start = matches[index].index;\n    const end = index + 1 < matches.length\n      ? matches[index + 1].index\n      : fullText.length;\n\n    output.push({\n      json: {\n        file_name: fileName,\n        page_number: index + 1,\n        total_pages: totalPages,\n        raw_invoice_text: fullText.slice(start, end).trim(),\n      },\n    });\n  }\n}\n\nreturn output;"
+        "jsCode": "const output = [];\n\nfor (const item of $input.all()) {\n  const input = item.json;\n\n  const fullText = input.text || '';\n  const totalPages = input.numpages || null;\n\n  const fileName = $('Read Input PDFs').item.binary.data.fileName || 'unknown.pdf';\n\n  const markerRegex = /Grower Name & Address\\s+Foreign Purchaser/g;\n  const matches = [...fullText.matchAll(markerRegex)];\n\n  if (matches.length === 0) {\n    output.push({\n      json: {\n        file_name: fileName,\n        source_file_path: `/files/input-pdfs/${fileName}`,\n        processed_file_path: `/files/processed/${fileName}`,\n        failed_file_path: `/files/failed/${fileName}`,\n        error: 'No invoices found using the expected marker',\n      },\n    });\n    continue;\n  }\n\n  for (let index = 0; index < matches.length; index++) {\n    const start = matches[index].index;\n    const end =\n      index + 1 < matches.length\n        ? matches[index + 1].index\n        : fullText.length;\n\n    output.push({\n      json: {\n        file_name: fileName,\n        source_file_path: `/files/input-pdfs/${fileName}`,\n        processed_file_path: `/files/processed/${fileName}`,\n        failed_file_path: `/files/failed/${fileName}`,\n        page_number: index + 1,\n        total_pages: totalPages,\n        raw_invoice_text: fullText.slice(start, end).trim(),\n      },\n    });\n  }\n}\n\nreturn output;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -177,26 +177,13 @@
     },
     {
       "parameters": {
-        "maxItems": 4
-      },
-      "type": "n8n-nodes-base.limit",
-      "typeVersion": 1,
-      "position": [
-        1232,
-        496
-      ],
-      "id": "c69d0b27-d84b-4507-a643-586236e14919",
-      "name": "Limit"
-    },
-    {
-      "parameters": {
-        "jsCode": "const output = [];\n\nfor (const item of $input.all()) {\n  const invoiceId = item.json.id;\n\n  const raw =\n    typeof item.json.raw_json === 'string'\n      ? JSON.parse(item.json.raw_json)\n      : item.json.raw_json;\n\n  const invoiceItems = raw.items || [];\n\n  invoiceItems.forEach((line, index) => {\n    output.push({\n      json: {\n        invoice_id: invoiceId,\n        line_index: index + 1,\n        product: line.product ?? null,\n        boxes: line.boxes ?? null,\n        unit: line.unit ?? null,\n        pieces: line.pieces ?? null,\n        tariff_number: line.tariff_number ?? null,\n        bunches: line.bunches ?? null,\n        stems: line.stems ?? null,\n        unit_price: line.unit_price ?? null,\n        extended_price: line.extended_price ?? null,\n      },\n    });\n  });\n}\n\nreturn output;"
+        "jsCode": "const output = [];\n\nfunction toNumber(value) {\n  if (value === null || value === undefined || value === '') return null;\n\n  const cleaned = String(value)\n    .replace(/,/g, '')\n    .trim();\n\n  const number = Number(cleaned);\n  return Number.isFinite(number) ? number : null;\n}\n\nfunction toInteger(value) {\n  const number = toNumber(value);\n  return number === null ? null : Math.trunc(number);\n}\n\nfor (const item of $input.all()) {\n  const invoiceId = item.json.id;\n\n  const raw =\n    typeof item.json.raw_json === 'string'\n      ? JSON.parse(item.json.raw_json)\n      : item.json.raw_json;\n\n  const invoiceItems = raw.items || [];\n\n  invoiceItems.forEach((line, index) => {\n    output.push({\n      json: {\n        invoice_id: invoiceId,\n        line_index: index + 1,\n        product: line.product ?? null,\n        boxes: toNumber(line.boxes),\n        unit: line.unit ?? null,\n        pieces: toInteger(line.pieces),\n        tariff_number: line.tariff_number ?? null,\n        bunches: toInteger(line.bunches),\n        stems: toInteger(line.stems),\n        unit_price: toNumber(line.unit_price),\n        extended_price: toNumber(line.extended_price),\n      },\n    });\n  });\n}\n\nreturn output;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1552,
-        176
+        192
       ],
       "id": "5e7183c5-bbc1-462e-93eb-6722144eaaff",
       "name": "Prepare Invoice Items"
@@ -377,8 +364,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1344,
-        176
+        1328,
+        192
       ],
       "id": "dcc0c113-d801-4a3f-a2b2-cf03bb469275",
       "name": "Insert invoice Header",
@@ -554,7 +541,7 @@
       "typeVersion": 2.6,
       "position": [
         1760,
-        176
+        192
       ],
       "id": "96ba0eb3-5985-404e-9c87-3bc57b630bda",
       "name": "Insert invoice items",
@@ -598,17 +585,73 @@
     {
       "parameters": {
         "content": "🧾  LINE ITEM UPSERT\n\nPersists invoice line items into PostgreSQL with duplicate-safe upsert logic.\n\nUnique matching:\n\ninvoice_id\nline_index\n\nPrevents duplicate item insertion across repeated workflow executions.",
-        "height": 528,
-        "width": 182
+        "height": 560,
+        "width": 166
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
         1728,
-        -128
+        -160
       ],
       "typeVersion": 1,
       "id": "bea6d3b1-cc33-48b4-9b77-005b21e0e92b",
       "name": "Note - JSON Normalization3"
+    },
+    {
+      "parameters": {
+        "content": "📦 PROCESSED FILE AGGREGATION\n\nBuilds a unique list of successfully processed source PDFs and prepares source/target paths for automated file lifecycle management.\n\nPrevents duplicate move operations when multiple invoices originate from the same PDF.",
+        "height": 560,
+        "width": 166
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1936,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "af3605a4-2773-4fb4-b7e6-a7c6df80c815",
+      "name": "Note - JSON Normalization4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sourceItems = $('Split Invoices into Items').all();\n\nconst seen = new Set();\nconst output = [];\n\nfor (const item of sourceItems) {\n  const fileName = item.json.file_name;\n\n  if (!fileName || seen.has(fileName)) continue;\n\n  seen.add(fileName);\n\n  output.push({\n    json: {\n      source: item.json.source_file_path,\n      target: item.json.processed_file_path,\n    },\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1968,
+        192
+      ],
+      "id": "504e795a-eaf2-4f2b-86fa-14113aaf323b",
+      "name": "Build Processed File List"
+    },
+    {
+      "parameters": {
+        "content": "🚚 FILE LIFECYCLE MANAGEMENT\n\nMoves successfully processed PDFs from the ingestion directory to the processed archive folder using filesystem-level operations.\n\nEnsures clean ingestion queues and prevents reprocessing of completed documents.",
+        "height": 560,
+        "width": 166
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2144,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "a016f0c8-ded2-410f-9a7d-4029b271ef50",
+      "name": "Note - JSON Normalization5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\n\nfor (const item of $input.all()) {\n  const source = item.json.source;\n  const target = item.json.target;\n\n  if (!source || !target) {\n    throw new Error('Missing source or target path');\n  }\n\n  fs.mkdirSync(path.dirname(target), { recursive: true });\n\n  if (fs.existsSync(source)) {\n    fs.renameSync(source, target);\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        192
+      ],
+      "id": "557e2066-77ff-4ae9-ac1f-44a22437928b",
+      "name": "Move Processed PDFs"
     }
   ],
   "pinData": {},
@@ -672,17 +715,6 @@
       "main": [
         [
           {
-            "node": "Limit",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Limit": {
-      "main": [
-        [
-          {
             "node": "Insert invoice Header",
             "type": "main",
             "index": 0
@@ -711,6 +743,28 @@
           }
         ]
       ]
+    },
+    "Insert invoice items": {
+      "main": [
+        [
+          {
+            "node": "Build Processed File List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Processed File List": {
+      "main": [
+        [
+          {
+            "node": "Move Processed PDFs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -718,7 +772,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "09413529-98f0-459b-8b70-6d00bc557240",
+  "versionId": "91786934-cd04-431c-afb6-eb6762e20caf",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "12d3a4a6df314132be4315d5c019dfa73b52090f3f9855edea4b1f8b68b225ca"
