@@ -29,17 +29,29 @@ This project was created as part of an AI automation engineering portfolio.
 # Architecture
 
 PDF Ingestion
+
     ↓
+
 PDF Text Extraction
+
     ↓
+
 Invoice Splitting
+
     ↓
+
 LLM Structured Extraction
+
     ↓
+
 JSON Normalization
+
     ↓
+
 PostgreSQL Persistence
+
     ↓
+    
 Processed File Archival
 
 ---
@@ -202,19 +214,26 @@ Archives successfully processed PDFs into the processed directory.
 # Local Development
 
 Start Services
+
    docker compose up -d
 
 Stop Services
+
    docker compose down
 
 ---
 
 # Repository Structure
 .
+
 ├── workflows/
+
 ├── screenshots/
+
 ├── docker/
+
 ├── docs/
+
 └── README.md
 
 ---
