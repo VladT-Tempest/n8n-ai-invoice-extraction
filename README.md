@@ -28,7 +28,6 @@ This project was created as part of an AI automation engineering portfolio.
 
 # Architecture
 
-```text
 PDF Ingestion
     ↓
 PDF Text Extraction
